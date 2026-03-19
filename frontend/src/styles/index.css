@@ -54,6 +54,43 @@
     @apply text-gray-900;
   }
 
+  /* 라이트 모드 텍스트 가독성 — 다크모드 밝은 글씨를 어두운 글씨로 변환 */
+  .light .text-gray-100 { color: #111827 !important; }
+  .light .text-gray-200 { color: #1f2937 !important; }
+  .light .text-gray-300 { color: #374151 !important; }
+  .light .text-gray-400 { color: #4b5563 !important; }
+  .light .text-gray-500 { color: #6b7280 !important; }
+  .light .text-gray-600 { color: #9ca3af !important; }
+
+  /* 라이트 모드 배경 변환 */
+  .light .bg-gray-900 { background-color: #f9fafb !important; }
+  .light .bg-gray-800 { background-color: #f3f4f6 !important; }
+  .light .bg-gray-700 { background-color: #e5e7eb !important; }
+  .light .bg-gray-900\/80 { background-color: rgba(249,250,251,0.9) !important; }
+
+  /* 라이트 모드 테두리 */
+  .light .border-gray-800 { border-color: #e5e7eb !important; }
+  .light .border-gray-700 { border-color: #d1d5db !important; }
+  .light .border-gray-600 { border-color: #d1d5db !important; }
+
+  /* 라이트 모드 호버 텍스트 */
+  .light .hover\:text-gray-200:hover { color: #111827 !important; }
+  .light .hover\:text-gray-300:hover { color: #1f2937 !important; }
+  .light .hover\:text-white:hover { color: #111827 !important; }
+  .light .group-hover\:text-white:hover { color: #111827 !important; }
+
+  /* 라이트 모드 호버 배경 */
+  .light .hover\:bg-gray-800:hover { background-color: #e5e7eb !important; }
+  .light .hover\:bg-gray-700:hover { background-color: #d1d5db !important; }
+  .light .hover\:bg-gray-600:hover { background-color: #d1d5db !important; }
+
+  /* 라이트 모드 placeholder */
+  .light .placeholder-gray-500::placeholder { color: #9ca3af !important; }
+
+  /* 라이트 모드 반투명 배경 */
+  .light .bg-gray-700\/50 { background-color: rgba(229,231,235,0.5) !important; }
+  .light .bg-indigo-600\/20 { background-color: rgba(99,102,241,0.1) !important; }
+
   /* Scrollbar */
   ::-webkit-scrollbar {
     width: 6px;
