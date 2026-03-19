@@ -33,11 +33,18 @@ api.interceptors.response.use(
   },
   (error) => {
     const msg = error.response?.data?.error?.message || error.message || '알 수 없는 오류';
+    const code = error.response?.data?.error?.code || '';
     const endpoint = error.config?.method?.toUpperCase() + ' ' + error.config?.url || '';
-    // 토스트 시스템에 에러 전파
-    window.dispatchEvent(new CustomEvent('bart:api-error', {
-      detail: { message: msg, endpoint, fullDetail: JSON.stringify(error.response?.data || {}) },
-    }));
+
+    // "데이터 없음" 류의 예상된 404는 토스트에서 제외
+    // (Plan.md 없음, 스키마 없음, Git 미초기화 등은 UI에서 별도 처리)
+    const SILENT_CODES = ['PLAN_NOT_FOUND', 'SCHEMA_NOT_FOUND', 'GIT_NOT_INITIALIZED', 'COMMIT_NOT_FOUND'];
+    if (!SILENT_CODES.includes(code)) {
+      window.dispatchEvent(new CustomEvent('bart:api-error', {
+        detail: { message: msg, endpoint, fullDetail: JSON.stringify(error.response?.data || {}) },
+      }));
+    }
+
     return Promise.reject(new Error(msg));
   }
 );
