@@ -105,8 +105,9 @@ export function parseSqlSchema(content: string): ErdResult {
   const tables: ErdTable[] = [];
   const relations: ErdRelation[] = [];
 
-  // CREATE TABLE 문 추출
-  const tableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"']?(\w+)[`"']?\s*\(([^;]+)\)/gi;
+  // CREATE TABLE 문 추출 — 한글/특수문자 테이블명, MySQL ENGINE 절 대응
+  // 마지막 닫는 괄호 `)` 앞까지를 body로 추출 (MySQL의 ) ENGINE=... 대응)
+  const tableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"']?([^`"'\s(]+)[`"']?\s*\(([\s\S]*?)\)\s*(?:ENGINE|DEFAULT|;|\n\n)/gi;
   let tableMatch: RegExpExecArray | null;
 
   while ((tableMatch = tableRegex.exec(content)) !== null) {
@@ -138,8 +139,8 @@ export function parseSqlSchema(content: string): ErdResult {
         continue;
       }
 
-      // 일반 컬럼 파싱: column_name TYPE modifiers
-      const colMatch = trimmed.match(/^[`"']?(\w+)[`"']?\s+(\w+(?:\([^)]*\))?)\s*(.*)?$/i);
+      // 일반 컬럼 파싱: column_name TYPE modifiers — 한글 컬럼명도 지원
+      const colMatch = trimmed.match(/^[`"']?([^`"'\s]+)[`"']?\s+(\w+(?:\([^)]*\))?)\s*(.*)?$/i);
       if (!colMatch) continue;
 
       const colName = colMatch[1];
