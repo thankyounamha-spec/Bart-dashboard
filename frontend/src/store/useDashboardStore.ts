@@ -154,10 +154,13 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
       const erd = await fetchErd(projectId);
       set({ erd, erdState: 'success' });
     } catch (err) {
-      set({
-        erdState: 'error',
-        erdError: err instanceof Error ? err.message : 'ERD를 불러올 수 없습니다',
-      });
+      const msg = err instanceof Error ? err.message : '';
+      // 스키마 파일이 없는 것은 에러가 아니라 "데이터 없음" 상태
+      if (msg.includes('스키마') || msg.includes('찾을 수 없습니다')) {
+        set({ erd: null, erdState: 'success', erdError: null });
+      } else {
+        set({ erdState: 'error', erdError: msg || 'ERD를 불러올 수 없습니다' });
+      }
     }
   },
 

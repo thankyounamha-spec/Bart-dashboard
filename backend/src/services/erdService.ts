@@ -44,28 +44,45 @@ export async function getErd(projectPath: string): Promise<ErdResult | null> {
     }
   }
 
-  // 추가로 프로젝트 루트에서 .sql 파일 검색
+  // 프로젝트 루트 및 주요 하위 디렉토리에서 .sql 파일 검색
+  const sqlSearchDirs = [normalizedPath];
   try {
-    const entries = await fs.readdir(normalizedPath, { withFileTypes: true });
-    for (const entry of entries) {
-      if (entry.isFile() && entry.name.endsWith('.sql') && entry.name !== 'schema.sql') {
-        const sqlPath = path.join(normalizedPath, entry.name);
-        try {
-          const content = await fs.readFile(sqlPath, 'utf-8');
-          // CREATE TABLE 문이 포함된 SQL 파일만 파싱
-          if (/CREATE\s+TABLE/i.test(content)) {
-            logger.info(`SQL 스키마 파일 발견: ${sqlPath}`);
-            const result = parseSqlSchema(content);
-            result.sourceFile = entry.name;
-            return result;
-          }
-        } catch {
-          // 파일 읽기 실패 시 무시
-        }
+    const rootEntries = await fs.readdir(normalizedPath, { withFileTypes: true });
+    for (const entry of rootEntries) {
+      if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+        sqlSearchDirs.push(path.join(normalizedPath, entry.name));
       }
     }
-  } catch {
-    // 디렉토리 읽기 실패
+  } catch { /* 무시 */ }
+
+  // 모든 DDL 내용을 합쳐서 파싱 (여러 SQL 파일에 테이블이 분산될 수 있음)
+  let combinedSql = '';
+  let foundSqlFile = '';
+
+  for (const dir of sqlSearchDirs) {
+    try {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isFile() && entry.name.endsWith('.sql')) {
+          const sqlPath = path.join(dir, entry.name);
+          try {
+            const content = await fs.readFile(sqlPath, 'utf-8');
+            if (/CREATE\s+TABLE/i.test(content)) {
+              const relPath = path.relative(normalizedPath, sqlPath);
+              logger.info(`SQL DDL 파일 발견: ${relPath}`);
+              combinedSql += '\n' + content;
+              if (!foundSqlFile) foundSqlFile = relPath;
+            }
+          } catch { /* 파일 읽기 실패 무시 */ }
+        }
+      }
+    } catch { /* 디렉토리 읽기 실패 무시 */ }
+  }
+
+  if (combinedSql) {
+    const result = parseSqlSchema(combinedSql);
+    result.sourceFile = foundSqlFile;
+    return result;
   }
 
   logger.debug(`스키마 파일 없음: ${projectPath}`);
