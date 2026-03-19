@@ -1,0 +1,25 @@
+{
+  "projects": [
+    {
+      "id": "0d9d469e-8aa8-48d1-ac2e-3493972dcba2",
+      "name": "partners-dashboard",
+      "path": "D:\\ClaudeWork\\partners-dashboard",
+      "createdAt": "2026-03-19T00:24:13.083Z",
+      "lastSyncedAt": "2026-03-19T01:07:17.951Z"
+    },
+    {
+      "id": "ecec8d7c-cd13-4dca-ab30-2cf91d4f9bae",
+      "name": "Bart-Agency",
+      "path": "D:\\ClaudeWork\\Bart-Agency",
+      "createdAt": "2026-03-19T00:52:20.047Z",
+      "lastSyncedAt": null
+    },
+    {
+      "id": "e03105b3-4754-48dc-8a43-3a4ce8135bae",
+      "name": "Bart-dashboard",
+      "path": "D:\\ClaudeWork\\Bart-dashboard",
+      "createdAt": "2026-03-19T00:01:13.032Z",
+      "lastSyncedAt": "2026-03-19T04:51:39.889Z"
+    }
+  ]
+}
