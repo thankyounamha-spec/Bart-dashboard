@@ -189,8 +189,18 @@ export default function ProjectDashboardPage() {
     );
   }
 
+  const printDate = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
   return (
     <div className="h-screen flex flex-col">
+      {/* 인쇄 전용 헤더 — 화면에서는 숨김 */}
+      <div className="hidden print-header" style={{ display: 'none' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <span>{summary?.project.name ?? ''} — 프로젝트 보고서</span>
+          <span style={{ fontSize: '10px', fontWeight: 'normal', color: '#6b7280' }}>{printDate}</span>
+        </div>
+      </div>
+
       {/* Top bar */}
       <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm flex-shrink-0 print:bg-white print:border-gray-200">
         <button
@@ -416,6 +426,11 @@ export default function ProjectDashboardPage() {
             </div>
           )}
         </aside>
+      </div>
+
+      {/* 인쇄 전용 푸터 — 화면에서는 숨김 */}
+      <div className="hidden print-footer" style={{ display: 'none' }}>
+        Bart Dashboard — {summary?.project.name} | {summary?.project.path} | {printDate}
       </div>
     </div>
   );

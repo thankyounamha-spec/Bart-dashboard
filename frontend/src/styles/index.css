@@ -144,81 +144,155 @@
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
-/* Print styles */
+/* ============================================================
+   Print styles — PDF 저장 시 깔끔한 보고서 형태로 출력
+   포함 항목: 프로젝트 정보, 진행률, 커밋 통계, 기술 스택, 타임라인
+   제외 항목: 버튼, 입력, 스크롤바, 다크 배경
+   ============================================================ */
 @media print {
-  body {
-    background: white !important;
-    color: #111827 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+  @page {
+    margin: 1.5cm;
+    size: A4;
   }
 
-  .print\\:hidden {
+  /* 전체 배경/텍스트를 흰색 기반으로 강제 변환 */
+  * {
+    color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body {
+    background: white !important;
+    color: #111827 !important;
+    font-size: 11px !important;
+  }
+
+  /* 모든 다크 배경 제거 */
+  [class*="bg-gray-9"],
+  [class*="bg-gray-8"],
+  [class*="bg-gray-7"],
+  [class*="bg-[var(--color-bg)"],
+  [class*="bg-[var(--color-card)"] {
+    background: white !important;
+  }
+
+  /* 텍스트 색상 보정 — 다크모드 밝은 글씨 → 어두운 글씨 */
+  [class*="text-gray-1"],
+  [class*="text-gray-2"],
+  [class*="text-gray-3"] {
+    color: #111827 !important;
+  }
+  [class*="text-gray-4"],
+  [class*="text-gray-5"] {
+    color: #4b5563 !important;
+  }
+  [class*="text-gray-6"] {
+    color: #6b7280 !important;
+  }
+
+  /* 카드 흰색 배경 + 연한 테두리 */
+  .card, .card-hover {
+    background: white !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+
+  /* 버튼, 입력, 인터랙티브 요소 숨기기 */
+  button, select, input, .print-hide {
     display: none !important;
   }
 
-  .print\\:block {
+  /* print:hidden 유틸리티 (Tailwind) */
+  .print\:hidden {
+    display: none !important;
+  }
+  .print\:block {
     display: block !important;
   }
 
-  .print\\:bg-white {
-    background-color: white !important;
-  }
-
-  .print\\:border-gray-200 {
-    border-color: #e5e7eb !important;
-  }
-
-  /* Hide interactive elements */
-  button,
-  select,
-  input {
-    display: none !important;
-  }
-
-  /* Show all content expanded */
-  .overflow-hidden,
-  .overflow-y-auto {
-    overflow: visible !important;
-    max-height: none !important;
-  }
-
-  /* White background for cards */
-  .card,
-  .card-hover {
-    background: white !important;
-    border-color: #e5e7eb !important;
-    box-shadow: none !important;
-  }
-
-  /* Scrollbars hidden */
+  /* 스크롤바 숨기기 */
   ::-webkit-scrollbar {
     display: none !important;
   }
 
-  /* Project name as header */
-  @page {
-    margin: 1.5cm;
-  }
-
-  /* Fix layout for print */
+  /* 레이아웃: 3컬럼 → 세로 1컬럼 */
   .h-screen {
     height: auto !important;
   }
 
-  .flex-1 {
+  .flex-1, .overflow-hidden, .overflow-y-auto {
+    overflow: visible !important;
+    max-height: none !important;
     flex: none !important;
   }
 
-  aside,
-  main {
+  /* 3컬럼 레이아웃을 세로 스택으로 변경 */
+  .flex.flex-1.overflow-hidden {
+    display: block !important;
+  }
+
+  /* 사이드바/메인/디테일 패널 폭 풀로 */
+  aside, main {
     width: 100% !important;
     border: none !important;
+    padding: 8px 0 !important;
     page-break-inside: avoid;
   }
 
-  /* Stack layout vertically for print */
-  .flex.flex-1.overflow-hidden {
-    flex-direction: column !important;
+  /* 우측 상세 패널 — 커밋이 선택되지 않았으면 숨기기 */
+  aside:last-child:empty {
+    display: none !important;
+  }
+
+  /* 프로젝트 헤더 인쇄 */
+  header {
+    background: white !important;
+    border-bottom: 2px solid #111827 !important;
+    padding: 8px 0 !important;
+  }
+
+  /* 배지 색상 유지 (커밋 타입, 기술 스택) */
+  .badge, [class*="bg-indigo"], [class*="bg-green"], [class*="bg-red"],
+  [class*="bg-amber"], [class*="bg-blue"], [class*="bg-purple"] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 진행률 바 색상 유지 */
+  [class*="bg-green-5"], [class*="bg-indigo-5"], [class*="bg-amber-5"] {
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* 타임라인 리스트 — 최대 20개만 표시 */
+  .timeline-item:nth-child(n+21) {
+    display: none !important;
+  }
+
+  /* 섹션 구분 */
+  .card + .card {
+    margin-top: 12px !important;
+  }
+
+  /* 인쇄 전용 헤더 표시 */
+  .print-header {
+    display: block !important;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    border-bottom: 2px solid #111;
+    padding-bottom: 4px;
+  }
+
+  /* 인쇄 전용 푸터 */
+  .print-footer {
+    display: block !important;
+    text-align: center;
+    font-size: 9px;
+    color: #9ca3af;
+    margin-top: 16px;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 4px;
   }
 }
