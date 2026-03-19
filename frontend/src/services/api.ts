@@ -32,10 +32,13 @@ api.interceptors.response.use(
     return Promise.reject(new Error(errMsg));
   },
   (error) => {
-    if (error.response?.data?.error?.message) {
-      return Promise.reject(new Error(error.response.data.error.message));
-    }
-    return Promise.reject(error);
+    const msg = error.response?.data?.error?.message || error.message || '알 수 없는 오류';
+    const endpoint = error.config?.method?.toUpperCase() + ' ' + error.config?.url || '';
+    // 토스트 시스템에 에러 전파
+    window.dispatchEvent(new CustomEvent('bart:api-error', {
+      detail: { message: msg, endpoint, fullDetail: JSON.stringify(error.response?.data || {}) },
+    }));
+    return Promise.reject(new Error(msg));
   }
 );
 

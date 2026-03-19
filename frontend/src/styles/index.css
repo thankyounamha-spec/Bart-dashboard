@@ -181,6 +181,22 @@
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
+/* Toast slide-in animation */
+@keyframes slide-in {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
 /* ============================================================
    Print styles — PDF 저장 시 깔끔한 보고서 형태로 출력
    포함 항목: 프로젝트 정보, 진행률, 커밋 통계, 기술 스택, 타임라인

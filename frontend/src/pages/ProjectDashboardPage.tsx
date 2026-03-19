@@ -216,7 +216,7 @@ export default function ProjectDashboardPage() {
         <div className="relative print:hidden" ref={dropdownRef}>
           <button
             onClick={() => setShowProjectDropdown(!showProjectDropdown)}
-            className="flex items-center gap-1.5 text-sm font-semibold text-gray-200 hover:text-white transition-colors px-2 py-1 rounded-md hover:bg-gray-800"
+            className="flex items-center gap-1.5 text-sm font-bold text-white hover:text-white transition-colors px-2 py-1 rounded-md hover:bg-gray-800"
           >
             {summary?.project.name ?? 'Loading...'}
             <svg className={`w-3.5 h-3.5 text-gray-500 transition-transform ${showProjectDropdown ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -224,7 +224,7 @@ export default function ProjectDashboardPage() {
             </svg>
           </button>
           {showProjectDropdown && allProjects.length > 0 && (
-            <div className="absolute top-full left-0 mt-1 w-72 bg-[#1e2235] border border-gray-600 rounded-lg shadow-2xl z-50 py-1.5 max-h-80 overflow-y-auto scrollbar-thin">
+            <div className="absolute top-full left-0 mt-1 w-72 bg-[#1e2235] border border-gray-600 rounded-lg shadow-2xl z-[100] py-1.5 max-h-80 overflow-y-auto scrollbar-thin">
               <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">프로젝트 전환</div>
               {allProjects.map((p) => {
                 const isCurrent = p.project.id === projectId;
