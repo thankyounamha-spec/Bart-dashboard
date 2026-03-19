@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDashboardStore } from '@/store/useDashboardStore';
+import { useProjectStore } from '@/store/useProjectStore';
 import { generatePlan } from '@/services/api';
 import { usePolling } from '@/hooks/usePolling';
 import { useWebSocket } from '@/hooks/useWebSocket';
@@ -21,6 +22,23 @@ export default function ProjectDashboardPage() {
   const navigate = useNavigate();
   const [centerView, setCenterView] = useState<CenterView>('timeline');
   const [selectedErdTable, setSelectedErdTable] = useState<ErdTable | null>(null);
+  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // 프로젝트 목록 로드 (드롭다운용)
+  const { projects: allProjects, loadProjects: loadAllProjects } = useProjectStore();
+  useEffect(() => { loadAllProjects(); }, [loadAllProjects]);
+
+  // 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowProjectDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const {
     summary,
@@ -165,9 +183,47 @@ export default function ProjectDashboardPage() {
           목록
         </button>
         <span className="text-gray-700">|</span>
-        <span className="text-sm font-semibold text-gray-200">
-          {summary?.project.name ?? 'Loading...'}
-        </span>
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+            className="flex items-center gap-1.5 text-sm font-semibold text-gray-200 hover:text-white transition-colors px-2 py-1 rounded-md hover:bg-gray-800"
+          >
+            {summary?.project.name ?? 'Loading...'}
+            <svg className={`w-3.5 h-3.5 text-gray-500 transition-transform ${showProjectDropdown ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showProjectDropdown && allProjects.length > 0 && (
+            <div className="absolute top-full left-0 mt-1 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 py-1 max-h-80 overflow-y-auto scrollbar-thin">
+              {allProjects.map((p) => (
+                <button
+                  key={p.project.id}
+                  onClick={() => {
+                    setShowProjectDropdown(false);
+                    if (p.project.id !== projectId) {
+                      navigate(`/project/${p.project.id}`);
+                    }
+                  }}
+                  className={`w-full text-left px-3 py-2.5 transition-colors ${
+                    p.project.id === projectId
+                      ? 'bg-indigo-600/20 text-indigo-300'
+                      : 'text-gray-300 hover:bg-gray-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium truncate">{p.project.name}</span>
+                    {p.project.id === projectId && (
+                      <svg className="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-500 font-mono truncate block">{p.project.path}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Center view tabs */}
         <div className="ml-auto flex items-center gap-1 bg-gray-800 rounded-lg p-0.5">
