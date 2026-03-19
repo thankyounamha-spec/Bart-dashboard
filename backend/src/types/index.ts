@@ -26,6 +26,9 @@ export type {
   ErdSource,
   DashboardWarning,
   FileChangeEvent,
+  CommitStats,
+  FileTreeNode,
+  FileDiff,
 } from '../../../shared/types/index.js';
 
 // 백엔드 전용 타입

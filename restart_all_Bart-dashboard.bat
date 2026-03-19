@@ -63,6 +63,7 @@ echo   Backend:   http://localhost:6173
 echo   Frontend:  http://localhost:6001
 echo.
 
-start http://localhost:6001
+echo   Already open? Just refresh your browser (F5)
+echo.
 
 pause

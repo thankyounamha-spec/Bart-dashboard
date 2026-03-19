@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { PlanSummary } from '@/types';
 import { formatPercent } from '@/utils/format';
+import { togglePlanTask } from '@/services/api';
 import LoadingSkeleton from '../common/LoadingSkeleton';
 import EmptyState from '../common/EmptyState';
 import ErrorBanner from '../common/ErrorBanner';
@@ -12,10 +13,51 @@ interface ProgressCardProps {
   onRetry?: () => void;
   onGenerate?: () => void;
   generating?: boolean;
+  projectId?: string;
+  onPlanUpdate?: (plan: PlanSummary) => void;
 }
 
-export default function ProgressCard({ plan, loading, error, onRetry, onGenerate, generating }: ProgressCardProps) {
+export default function ProgressCard({ plan, loading, error, onRetry, onGenerate, generating, projectId, onPlanUpdate }: ProgressCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [togglingTask, setTogglingTask] = useState<string | null>(null);
+
+  const handleToggleTask = async (sectionIndex: number, taskIndex: number) => {
+    if (!projectId || !plan) return;
+
+    const taskKey = `${sectionIndex}-${taskIndex}`;
+    setTogglingTask(taskKey);
+
+    // Optimistic update
+    const oldPlan = plan;
+    const updatedPlan = structuredClone(plan);
+    const task = updatedPlan.sections[sectionIndex]?.tasks[taskIndex];
+    if (task) {
+      task.completed = !task.completed;
+      // Recalculate section stats
+      const section = updatedPlan.sections[sectionIndex];
+      section.completedTasks = section.tasks.filter((t) => t.completed).length;
+      section.progressPercent = section.totalTasks > 0
+        ? Math.round((section.completedTasks / section.totalTasks) * 100)
+        : 0;
+      // Recalculate overall stats
+      updatedPlan.completedTasks = updatedPlan.sections.reduce((sum, s) => sum + s.completedTasks, 0);
+      updatedPlan.totalTasks = updatedPlan.sections.reduce((sum, s) => sum + s.totalTasks, 0);
+      updatedPlan.progressPercent = updatedPlan.totalTasks > 0
+        ? Math.round((updatedPlan.completedTasks / updatedPlan.totalTasks) * 100)
+        : 0;
+      onPlanUpdate?.(updatedPlan);
+    }
+
+    try {
+      const serverPlan = await togglePlanTask(projectId, sectionIndex, taskIndex);
+      onPlanUpdate?.(serverPlan);
+    } catch {
+      // Revert on error
+      onPlanUpdate?.(oldPlan);
+    } finally {
+      setTogglingTask(null);
+    }
+  };
 
   if (loading) return <LoadingSkeleton variant="block" />;
   if (error) return <ErrorBanner message={error} onRetry={onRetry} />;
@@ -107,8 +149,8 @@ export default function ProgressCard({ plan, loading, error, onRetry, onGenerate
 
           {expanded && (
             <div className="mt-3 space-y-3">
-              {plan.sections.map((section, idx) => (
-                <div key={idx} className="space-y-1">
+              {plan.sections.map((section, sectionIdx) => (
+                <div key={sectionIdx} className="space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-300 truncate flex-1 mr-2">
                       {section.title}
@@ -125,6 +167,37 @@ export default function ProgressCard({ plan, loading, error, onRetry, onGenerate
                       style={{ width: `${Math.min(section.progressPercent, 100)}%` }}
                     />
                   </div>
+                  {/* Task checkboxes */}
+                  {section.tasks && section.tasks.length > 0 && (
+                    <div className="mt-1 space-y-0.5 pl-2">
+                      {section.tasks.map((task, taskIdx) => {
+                        const taskKey = `${sectionIdx}-${taskIdx}`;
+                        const isToggling = togglingTask === taskKey;
+                        return (
+                          <label
+                            key={taskIdx}
+                            className="flex items-start gap-1.5 text-xs cursor-pointer group"
+                          >
+                            <span className="relative flex-shrink-0 mt-0.5">
+                              <input
+                                type="checkbox"
+                                checked={task.completed}
+                                onChange={() => handleToggleTask(sectionIdx, taskIdx)}
+                                disabled={isToggling || !projectId}
+                                className="w-3.5 h-3.5 rounded border-gray-600 bg-gray-700 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0 cursor-pointer disabled:opacity-50"
+                              />
+                              {isToggling && (
+                                <span className="absolute -right-4 top-0 text-[10px] text-gray-500 animate-pulse">...</span>
+                              )}
+                            </span>
+                            <span className={`${task.completed ? 'text-gray-600 line-through' : 'text-gray-400 group-hover:text-gray-300'} transition-colors`}>
+                              {task.text}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

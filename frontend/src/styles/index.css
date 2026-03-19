@@ -2,7 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* Dark mode (default) */
+:root,
+.dark {
   --color-bg: #0f1117;
   --color-card: #1a1d2e;
   --color-card-hover: #222640;
@@ -17,15 +19,39 @@
   --color-text-muted: #6b7280;
 }
 
+/* Light mode */
+.light {
+  --color-bg: #f9fafb;
+  --color-card: #ffffff;
+  --color-card-hover: #f3f4f6;
+  --color-border: #e5e7eb;
+  --color-accent: #6366f1;
+  --color-accent-hover: #4f46e5;
+  --color-success: #059669;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-muted: #9ca3af;
+}
+
 @layer base {
   html {
     color-scheme: dark;
+  }
+
+  html.light {
+    color-scheme: light;
   }
 
   body {
     @apply bg-[var(--color-bg)] text-gray-100 antialiased;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
       'Helvetica Neue', Arial, 'Noto Sans KR', sans-serif;
+  }
+
+  .light body {
+    @apply text-gray-900;
   }
 
   /* Scrollbar */
@@ -44,6 +70,14 @@
 
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-gray-600;
+  }
+
+  .light ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300;
+  }
+
+  .light ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
   }
 }
 
@@ -64,8 +98,16 @@
     @apply px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-lg font-medium transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
+  .light .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-700;
+  }
+
   .input-field {
     @apply w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-150;
+  }
+
+  .light .input-field {
+    @apply bg-white border-gray-300 text-gray-900 placeholder-gray-400;
   }
 
   .badge {
@@ -82,6 +124,10 @@
     scrollbar-width: thin;
     scrollbar-color: #374151 transparent;
   }
+
+  .light .scrollbar-thin {
+    scrollbar-color: #d1d5db transparent;
+  }
 }
 
 /* Skeleton animation */
@@ -96,4 +142,83 @@
 
 .animate-skeleton {
   animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* Print styles */
+@media print {
+  body {
+    background: white !important;
+    color: #111827 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  .print\\:block {
+    display: block !important;
+  }
+
+  .print\\:bg-white {
+    background-color: white !important;
+  }
+
+  .print\\:border-gray-200 {
+    border-color: #e5e7eb !important;
+  }
+
+  /* Hide interactive elements */
+  button,
+  select,
+  input {
+    display: none !important;
+  }
+
+  /* Show all content expanded */
+  .overflow-hidden,
+  .overflow-y-auto {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  /* White background for cards */
+  .card,
+  .card-hover {
+    background: white !important;
+    border-color: #e5e7eb !important;
+    box-shadow: none !important;
+  }
+
+  /* Scrollbars hidden */
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* Project name as header */
+  @page {
+    margin: 1.5cm;
+  }
+
+  /* Fix layout for print */
+  .h-screen {
+    height: auto !important;
+  }
+
+  .flex-1 {
+    flex: none !important;
+  }
+
+  aside,
+  main {
+    width: 100% !important;
+    border: none !important;
+    page-break-inside: avoid;
+  }
+
+  /* Stack layout vertically for print */
+  .flex.flex-1.overflow-hidden {
+    flex-direction: column !important;
+  }
 }

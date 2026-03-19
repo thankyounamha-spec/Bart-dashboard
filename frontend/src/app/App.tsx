@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import ProjectListPage from '../pages/ProjectListPage';
 import ProjectDashboardPage from '../pages/ProjectDashboardPage';
+import ProjectComparePage from '../pages/ProjectComparePage';
 
 export default function App() {
   return (
@@ -8,6 +9,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<ProjectListPage />} />
         <Route path="/project/:projectId" element={<ProjectDashboardPage />} />
+        <Route path="/compare" element={<ProjectComparePage />} />
       </Routes>
     </div>
   );

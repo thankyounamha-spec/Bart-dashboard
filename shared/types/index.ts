@@ -167,3 +167,30 @@ export interface FileChangeEvent {
   changeType: 'plan' | 'git' | 'config' | 'schema';
   timestamp: string;
 }
+
+/** 커밋 통계 - 대시보드 통계 위젯용 */
+export interface CommitStats {
+  todayCommits: number;
+  weekCommits: number;
+  totalCommits: number;
+  mostActiveHour: number | null;
+  commitsByType: Record<string, number>;
+  commitsByDay: Array<{ date: string; count: number }>;
+}
+
+/** 파일 트리 노드 - 프로젝트 구조 시각화용 */
+export interface FileTreeNode {
+  name: string;
+  type: 'file' | 'directory';
+  path: string;
+  extension?: string;
+  children?: FileTreeNode[];
+  size?: number;
+}
+
+/** 파일 diff 결과 - 커밋 상세의 파일별 변경 내용 */
+export interface FileDiff {
+  filePath: string;
+  diff: string;
+  truncated: boolean;
+}

@@ -12,6 +12,7 @@ interface TimelineDetailPanelProps {
   loading: boolean;
   error: string | null;
   onRetry?: () => void;
+  projectId?: string;
 }
 
 export default function TimelineDetailPanel({
@@ -19,6 +20,7 @@ export default function TimelineDetailPanel({
   loading,
   error,
   onRetry,
+  projectId,
 }: TimelineDetailPanelProps) {
   if (loading) {
     return (
@@ -115,7 +117,7 @@ export default function TimelineDetailPanel({
         <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
           변경된 파일 ({commit.files.length})
         </h4>
-        <ChangeFileList files={commit.files} maxVisible={20} />
+        <ChangeFileList files={commit.files} maxVisible={20} projectId={projectId} commitHash={commit.hash} />
       </div>
     </div>
   );

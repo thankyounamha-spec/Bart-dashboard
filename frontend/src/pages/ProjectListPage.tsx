@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProjectStore } from '@/store/useProjectStore';
+import { useTheme } from '@/hooks/useTheme';
 import { formatDate, formatPath, formatPercent } from '@/utils/format';
 import AddProjectModal from '@/components/dashboard/AddProjectModal';
 import LoadingSkeleton from '@/components/common/LoadingSkeleton';
@@ -9,7 +10,15 @@ import EmptyState from '@/components/common/EmptyState';
 import Tooltip from '@/components/common/Tooltip';
 import type { ProjectSummary } from '@/types';
 
-function ProjectCard({ summary, onClick }: { summary: ProjectSummary; onClick: () => void }) {
+function ProjectCard({
+  summary,
+  onClick,
+  onDelete,
+}: {
+  summary: ProjectSummary;
+  onClick: () => void;
+  onDelete: (e: React.MouseEvent) => void;
+}) {
   const { project, plan, gitStatus, lastCommit } = summary;
   const percent = plan?.progressPercent ?? 0;
 
@@ -38,7 +47,7 @@ function ProjectCard({ summary, onClick }: { summary: ProjectSummary; onClick: (
       onClick={onClick}
       className="card-hover p-5 text-left w-full transition-all duration-200 group"
     >
-      {/* Top row: name + status dot */}
+      {/* Top row: name + status dot + delete button */}
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0">
           <h3 className="text-base font-semibold text-gray-100 group-hover:text-white truncate">
@@ -50,12 +59,23 @@ function ProjectCard({ summary, onClick }: { summary: ProjectSummary; onClick: (
             </span>
           </Tooltip>
         </div>
-        <span
-          className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 ${
-            isActive ? 'bg-green-400' : 'bg-gray-600'
-          }`}
-          title={isActive ? '활성' : '비활성'}
-        />
+        <div className="flex items-center gap-1.5 flex-shrink-0 mt-1">
+          <span
+            className={`w-2.5 h-2.5 rounded-full ${
+              isActive ? 'bg-green-400' : 'bg-gray-600'
+            }`}
+            title={isActive ? '활성' : '비활성'}
+          />
+          <button
+            onClick={onDelete}
+            className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-500 hover:text-red-400 transition-all"
+            title="삭제"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Last commit */}
@@ -105,10 +125,11 @@ function ProjectCard({ summary, onClick }: { summary: ProjectSummary; onClick: (
 }
 
 export default function ProjectListPage() {
-  const { projects, loading, error, loadProjects, reorderProjects } = useProjectStore();
+  const { projects, loading, error, loadProjects, reorderProjects, deleteProject } = useProjectStore();
   const [showAddModal, setShowAddModal] = useState(false);
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
+  const { isDark, toggle } = useTheme();
 
   // 드래그 상태 관리
   const dragItem = useRef<number | null>(null);
@@ -153,6 +174,13 @@ export default function ProjectListPage() {
     setDragIdx(null);
   };
 
+  const handleDelete = (e: React.MouseEvent, projectId: string) => {
+    e.stopPropagation();
+    if (window.confirm('프로젝트를 목록에서 삭제하시겠습니까?')) {
+      deleteProject(projectId);
+    }
+  };
+
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -162,15 +190,44 @@ export default function ProjectListPage() {
             <h1 className="text-xl font-bold text-gray-100">Bart Dashboard</h1>
             <p className="text-sm text-gray-500">Claude Code CLI 개발 진행 현황</p>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="btn-primary flex items-center gap-2 text-sm"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            프로젝트 추가
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Theme toggle */}
+            <button
+              onClick={toggle}
+              className="p-2 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors"
+              title={isDark ? '라이트 모드' : '다크 모드'}
+            >
+              {isDark ? (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              )}
+            </button>
+            {/* Compare button */}
+            <button
+              onClick={() => navigate('/compare')}
+              className="btn-secondary flex items-center gap-2 text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              프로젝트 비교
+            </button>
+            {/* Add project button */}
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="btn-primary flex items-center gap-2 text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              프로젝트 추가
+            </button>
+          </div>
         </div>
       </header>
 
@@ -247,6 +304,7 @@ export default function ProjectListPage() {
                 <ProjectCard
                   summary={summary}
                   onClick={() => navigate(`/project/${summary.project.id}`)}
+                  onDelete={(e) => handleDelete(e, summary.project.id)}
                 />
               </div>
             ))}

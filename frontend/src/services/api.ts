@@ -8,6 +8,9 @@ import type {
   GitCommit,
   GitCommitDetail,
   ErdResult,
+  CommitStats,
+  FileTreeNode,
+  FileDiff,
 } from '@/types';
 
 const api = axios.create({
@@ -100,4 +103,42 @@ export async function syncProject(
 ): Promise<ProjectSummary> {
   const res = await api.post(`/projects/${projectId}/sync`);
   return res.data as ProjectSummary;
+}
+
+export async function deleteProject(projectId: string): Promise<void> {
+  await api.delete(`/projects/${projectId}`);
+}
+
+export async function fetchStats(projectId: string): Promise<CommitStats> {
+  const res = await api.get(`/projects/${projectId}/stats`);
+  return res.data as CommitStats;
+}
+
+export async function fetchFileTree(projectId: string): Promise<FileTreeNode[]> {
+  const res = await api.get(`/projects/${projectId}/filetree`);
+  return res.data as FileTreeNode[];
+}
+
+export async function togglePlanTask(
+  projectId: string,
+  sectionIndex: number,
+  taskIndex: number
+): Promise<PlanSummary> {
+  const res = await api.put(`/projects/${projectId}/plan/toggle`, {
+    sectionIndex,
+    taskIndex,
+  });
+  return res.data as PlanSummary;
+}
+
+export async function fetchFileDiff(
+  projectId: string,
+  hash: string,
+  filePath: string
+): Promise<FileDiff> {
+  const encodedPath = encodeURIComponent(filePath);
+  const res = await api.get(
+    `/projects/${projectId}/timeline/${hash}/diff/${encodedPath}`
+  );
+  return res.data as FileDiff;
 }

@@ -99,6 +99,103 @@ export async function generatePlan(projectPath: string, projectName: string): Pr
   return result!;
 }
 
+/**
+ * PLAN.md 파일의 특정 체크박스를 토글
+ * sectionIndex와 taskIndex로 대상 태스크를 식별하여 [ ] <-> [x] 전환
+ */
+export async function toggleTask(
+  projectPath: string,
+  sectionIndex: number,
+  taskIndex: number,
+): Promise<PlanSummary> {
+  const normalizedPath = path.normalize(projectPath);
+
+  // PLAN.md 파일 경로 찾기
+  const candidates = ['PLAN.md', 'Plan.md', 'plan.md', 'PLAN.MD'];
+  let planPath: string | null = null;
+
+  for (const candidate of candidates) {
+    const candidatePath = path.join(normalizedPath, candidate);
+    try {
+      await fs.access(candidatePath);
+      planPath = candidatePath;
+      break;
+    } catch {
+      // 다음 후보 시도
+    }
+  }
+
+  if (!planPath) {
+    const err = new Error('PLAN.md 파일을 찾을 수 없습니다.') as Error & { statusCode?: number; code?: string };
+    err.statusCode = 404;
+    err.code = 'PLAN_NOT_FOUND';
+    throw err;
+  }
+
+  const content = await fs.readFile(planPath, 'utf-8');
+  const lines = content.split(/\r?\n/);
+
+  // 섹션과 태스크를 순회하며 대상 체크박스의 줄 번호를 찾음
+  let currentSectionIdx = -1;
+  let currentTaskIdx = -1;
+  let targetLineIdx = -1;
+  // 섹션 헤더 전 태스크가 있을 수 있으므로 -1부터 시작 (미분류 섹션)
+  let hasSeenSection = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+
+    // 섹션 헤더 감지
+    const sectionMatch = trimmed.match(/^#{2,3}\s+(.+)$/);
+    if (sectionMatch) {
+      // 이전 섹션에 태스크가 있었으면 섹션 인덱스 증가
+      if (hasSeenSection || currentTaskIdx >= 0) {
+        // 첫 섹션이 아닌 경우에만 증가
+      }
+      currentSectionIdx++;
+      currentTaskIdx = -1;
+      hasSeenSection = true;
+      continue;
+    }
+
+    // 체크박스 감지
+    const checkboxMatch = trimmed.match(/^[-*]\s+\[([ xX])\]\s+(.+)$/);
+    if (checkboxMatch) {
+      // 섹션 헤더 전 태스크는 sectionIndex 0으로 취급
+      const effectiveSectionIdx = hasSeenSection ? currentSectionIdx : 0;
+      currentTaskIdx++;
+
+      if (effectiveSectionIdx === sectionIndex && currentTaskIdx === taskIndex) {
+        targetLineIdx = i;
+        break;
+      }
+    }
+  }
+
+  if (targetLineIdx === -1) {
+    const err = new Error('해당 태스크를 찾을 수 없습니다.') as Error & { statusCode?: number; code?: string };
+    err.statusCode = 400;
+    err.code = 'INVALID_PATH';
+    throw err;
+  }
+
+  // 체크박스 토글: [ ] -> [x], [x] -> [ ], [X] -> [ ]
+  const line = lines[targetLineIdx];
+  if (/\[[ ]\]/.test(line)) {
+    lines[targetLineIdx] = line.replace('[ ]', '[x]');
+  } else {
+    lines[targetLineIdx] = line.replace(/\[[xX]\]/, '[ ]');
+  }
+
+  // 원본 파일의 줄바꿈 형식 유지
+  const lineEnding = content.includes('\r\n') ? '\r\n' : '\n';
+  await fs.writeFile(planPath, lines.join(lineEnding), 'utf-8');
+  logger.info(`PLAN.md 태스크 토글: section=${sectionIndex}, task=${taskIndex}`);
+
+  // 변경된 PLAN.md를 다시 파싱하여 최신 상태 반환
+  return (await parsePlanFile(planPath))!;
+}
+
 /** 커밋 타입을 섹션명으로 매핑 */
 function getSectionName(type: string): string {
   switch (type) {

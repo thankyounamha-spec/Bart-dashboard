@@ -5,8 +5,12 @@ import { useProjectStore } from '@/store/useProjectStore';
 import { generatePlan } from '@/services/api';
 import { usePolling } from '@/hooks/usePolling';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useTheme } from '@/hooks/useTheme';
+import { useNotification } from '@/hooks/useNotification';
 import ProjectHeader from '@/components/dashboard/ProjectHeader';
 import ProgressCard from '@/components/dashboard/ProgressCard';
+import StatsCard from '@/components/dashboard/StatsCard';
+import FileTreeView from '@/components/dashboard/FileTreeView';
 import TechStackCard from '@/components/stack/TechStackCard';
 import TimelineList from '@/components/timeline/TimelineList';
 import TimelineDetailPanel from '@/components/timeline/TimelineDetailPanel';
@@ -14,7 +18,7 @@ import ErdViewer from '@/components/erd/ErdViewer';
 import ErdTableDetail from '@/components/erd/ErdTableDetail';
 import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 import ErrorBanner from '@/components/common/ErrorBanner';
-import type { CenterView, FileChangeEvent } from '@/types';
+import type { CenterView, FileChangeEvent, PlanSummary } from '@/types';
 import type { ErdTable, GitCommit } from '@/types';
 
 export default function ProjectDashboardPage() {
@@ -24,6 +28,7 @@ export default function ProjectDashboardPage() {
   const [selectedErdTable, setSelectedErdTable] = useState<ErdTable | null>(null);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { isDark, toggle } = useTheme();
 
   // 프로젝트 목록 로드 (드롭다운용)
   const { projects: allProjects, loadProjects: loadAllProjects } = useProjectStore();
@@ -70,6 +75,13 @@ export default function ProjectDashboardPage() {
     sync,
     reset,
   } = useDashboardStore();
+
+  // Notification hook
+  useNotification({
+    projectName: summary?.project.name ?? null,
+    timeline,
+    plan,
+  });
 
   // Load all data on mount
   useEffect(() => {
@@ -137,6 +149,14 @@ export default function ProjectDashboardPage() {
     }
   };
 
+  const handlePlanUpdate = (updatedPlan: PlanSummary) => {
+    useDashboardStore.setState({ plan: updatedPlan });
+  };
+
+  const handlePdfExport = () => {
+    window.print();
+  };
+
   if (!projectId) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -172,18 +192,18 @@ export default function ProjectDashboardPage() {
   return (
     <div className="h-screen flex flex-col">
       {/* Top bar */}
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm flex-shrink-0">
+      <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm flex-shrink-0 print:bg-white print:border-gray-200">
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-200 transition-colors"
+          className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-200 transition-colors print:hidden"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           목록
         </button>
-        <span className="text-gray-700">|</span>
-        <div className="relative" ref={dropdownRef}>
+        <span className="text-gray-700 print:hidden">|</span>
+        <div className="relative print:hidden" ref={dropdownRef}>
           <button
             onClick={() => setShowProjectDropdown(!showProjectDropdown)}
             className="flex items-center gap-1.5 text-sm font-semibold text-gray-200 hover:text-white transition-colors px-2 py-1 rounded-md hover:bg-gray-800"
@@ -225,8 +245,13 @@ export default function ProjectDashboardPage() {
           )}
         </div>
 
+        {/* Print header (hidden on screen) */}
+        <div className="hidden print:block">
+          <h1 className="text-lg font-bold text-gray-900">{summary?.project.name ?? ''}</h1>
+        </div>
+
         {/* Center view tabs */}
-        <div className="ml-auto flex items-center gap-1 bg-gray-800 rounded-lg p-0.5">
+        <div className="ml-auto flex items-center gap-1 bg-gray-800 rounded-lg p-0.5 print:hidden">
           <button
             onClick={() => {
               setCenterView('timeline');
@@ -254,6 +279,34 @@ export default function ProjectDashboardPage() {
             ERD Diagram
           </button>
         </div>
+
+        {/* PDF export button */}
+        <button
+          onClick={handlePdfExport}
+          className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5 print:hidden"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+          PDF 저장
+        </button>
+
+        {/* Theme toggle */}
+        <button
+          onClick={toggle}
+          className="p-2 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors print:hidden"
+          title={isDark ? '라이트 모드' : '다크 모드'}
+        >
+          {isDark ? (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          )}
+        </button>
       </header>
 
       {/* Main 3-column layout */}
@@ -275,7 +328,11 @@ export default function ProjectDashboardPage() {
             onRetry={() => loadPlan(projectId)}
             onGenerate={handleGeneratePlan}
             generating={generating}
+            projectId={projectId}
+            onPlanUpdate={handlePlanUpdate}
           />
+
+          <StatsCard projectId={projectId} />
 
           <TechStackCard
             stack={stack}
@@ -283,6 +340,8 @@ export default function ProjectDashboardPage() {
             error={stackError}
             onRetry={() => loadStack(projectId)}
           />
+
+          <FileTreeView projectId={projectId} />
 
           {/* Mini ERD summary in sidebar */}
           {erd && erd.tables.length > 0 && (
@@ -344,6 +403,7 @@ export default function ProjectDashboardPage() {
               commit={selectedCommit}
               loading={commitDetailState === 'loading'}
               error={commitDetailError}
+              projectId={projectId}
             />
           ) : selectedErdTable ? (
             <ErdTableDetail

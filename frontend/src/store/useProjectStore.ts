@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { ProjectSummary } from '@/types';
-import { fetchProjects, createProject, reorderProjectsApi } from '@/services/api';
+import { fetchProjects, createProject, reorderProjectsApi, deleteProject as deleteProjectApi } from '@/services/api';
 
 interface ProjectStore {
   projects: ProjectSummary[];
@@ -10,6 +10,7 @@ interface ProjectStore {
 
   loadProjects: () => Promise<void>;
   addProject: (path: string, name?: string) => Promise<void>;
+  deleteProject: (projectId: string) => Promise<void>;
   selectProject: (project: ProjectSummary | null) => void;
   reorderProjects: (orderedIds: string[]) => void;
 }
@@ -42,6 +43,18 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       set({
         error: err instanceof Error ? err.message : '프로젝트를 추가할 수 없습니다',
         loading: false,
+      });
+      throw err;
+    }
+  },
+
+  deleteProject: async (projectId) => {
+    try {
+      await deleteProjectApi(projectId);
+      await get().loadProjects();
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : '프로젝트를 삭제할 수 없습니다',
       });
       throw err;
     }

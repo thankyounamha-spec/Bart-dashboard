@@ -265,6 +265,48 @@ export async function getDiffSummary(projectPath: string, hash: string): Promise
   }
 }
 
+/** 특정 커밋에서 특정 파일의 diff 내용을 조회 */
+export async function getFileDiff(
+  projectPath: string,
+  hash: string,
+  filePath: string,
+): Promise<{ diff: string; truncated: boolean }> {
+  // 해시 값 안전성 검증 - shell injection 방지
+  if (!/^[a-fA-F0-9]{4,40}$/.test(hash)) {
+    throw new Error('유효하지 않은 커밋 해시입니다.');
+  }
+
+  // 파일 경로 검증 - 상위 디렉토리 탈출 방지와 특수문자 차단
+  if (filePath.includes('..') || /[;&|`$]/.test(filePath)) {
+    throw new Error('유효하지 않은 파일 경로입니다.');
+  }
+
+  const MAX_LINES = 500;
+
+  try {
+    const output = await git(projectPath, ['diff', `${hash}~1`, hash, '--', filePath]);
+
+    const lines = output.split('\n');
+    const truncated = lines.length > MAX_LINES;
+    const diff = truncated ? lines.slice(0, MAX_LINES).join('\n') : output;
+
+    return { diff, truncated };
+  } catch {
+    // 첫 커밋이거나 diff 실패 시 show로 대체 시도
+    try {
+      const output = await git(projectPath, ['show', `${hash}`, '--', filePath]);
+      const lines = output.split('\n');
+      const truncated = lines.length > MAX_LINES;
+      const diff = truncated ? lines.slice(0, MAX_LINES).join('\n') : output;
+
+      return { diff, truncated };
+    } catch {
+      logger.debug(`파일 diff 조회 실패: ${hash} -- ${filePath}`);
+      return { diff: '', truncated: false };
+    }
+  }
+}
+
 /** 현재 브랜치와 전체 커밋 수 조회 */
 export async function getGitStatus(projectPath: string): Promise<GitStatus> {
   const isRepo = await isGitRepo(projectPath);

@@ -1,4 +1,4 @@
-import type { GitCommit, GitCommitDetail, GitStatus, GitCommitSummary } from '../types/index.js';
+import type { GitCommit, GitCommitDetail, GitStatus, GitCommitSummary, FileDiff } from '../types/index.js';
 import * as gitAnalyzer from '../analyzers/gitAnalyzer.js';
 import { DEFAULT_GIT_LOG_LIMIT } from '../../../shared/constants/index.js';
 import { logger } from '../utils/logger.js';
@@ -41,6 +41,26 @@ export async function getStatus(projectPath: string): Promise<GitStatus> {
   } catch (err) {
     logger.error('Git 상태 조회 실패', err);
     return { isGitRepo: false, currentBranch: null, totalCommits: 0 };
+  }
+}
+
+/** 특정 커밋의 파일별 diff 조회 */
+export async function getFileDiff(projectPath: string, hash: string, filePath: string): Promise<FileDiff | null> {
+  const isRepo = await gitAnalyzer.isGitRepo(projectPath);
+  if (!isRepo) {
+    return null;
+  }
+
+  try {
+    const result = await gitAnalyzer.getFileDiff(projectPath, hash, filePath);
+    return {
+      filePath,
+      diff: result.diff,
+      truncated: result.truncated,
+    };
+  } catch (err) {
+    logger.error(`파일 diff 조회 실패: ${hash} -- ${filePath}`, err);
+    return null;
   }
 }
 
