@@ -1,0 +1,169 @@
+// ============================================================
+// 공유 타입 정의
+// 프론트엔드와 백엔드가 동일한 데이터 구조를 사용하기 위한 타입들
+// ============================================================
+
+/** 표준 API 응답 구조 - 모든 API가 이 형식을 따른다 */
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  data: T | null;
+  error: ApiError | null;
+}
+
+export interface ApiError {
+  code: string;
+  message: string;
+}
+
+/** 프로젝트 등록 정보 */
+export interface Project {
+  id: string;
+  name: string;
+  path: string;
+  createdAt: string;      // ISO 8601
+  lastSyncedAt: string | null;
+}
+
+export interface ProjectCreateRequest {
+  path: string;
+  name?: string;
+}
+
+/** 프로젝트 요약 정보 - Dashboard 메인 카드에 표시 */
+export interface ProjectSummary {
+  project: Project;
+  plan: PlanSummary | null;
+  gitStatus: GitStatus | null;
+  lastCommit: GitCommitSummary | null;
+  warnings: DashboardWarning[];
+}
+
+/** PLAN.md 파싱 결과 */
+export interface PlanSummary {
+  totalTasks: number;
+  completedTasks: number;
+  progressPercent: number;
+  sections: PlanSection[];
+}
+
+export interface PlanSection {
+  title: string;
+  totalTasks: number;
+  completedTasks: number;
+  progressPercent: number;
+  tasks: PlanTask[];
+}
+
+export interface PlanTask {
+  text: string;
+  completed: boolean;
+}
+
+/** Git 관련 타입 */
+export interface GitStatus {
+  isGitRepo: boolean;
+  currentBranch: string | null;
+  totalCommits: number;
+}
+
+export interface GitCommitSummary {
+  hash: string;
+  subject: string;
+  date: string;
+  author: string;
+}
+
+export type CommitType = 'feat' | 'fix' | 'refactor' | 'docs' | 'style' | 'chore' | 'test' | 'perf' | 'other';
+
+export interface GitCommit {
+  hash: string;
+  hashShort: string;
+  subject: string;
+  body: string;
+  date: string;           // ISO 8601
+  author: string;
+  type: CommitType;
+  files: ChangedFile[];
+}
+
+export interface GitCommitDetail extends GitCommit {
+  diffSummary: DiffSummary | null;
+}
+
+export interface ChangedFile {
+  path: string;
+  status: 'added' | 'modified' | 'deleted' | 'renamed';
+  additions?: number;
+  deletions?: number;
+}
+
+export interface DiffSummary {
+  totalFiles: number;
+  totalAdditions: number;
+  totalDeletions: number;
+  files: ChangedFile[];
+}
+
+/** 기술 스택 */
+export interface TechStack {
+  name: string;
+  version: string | null;
+  category: TechCategory;
+  source: TechSource;       // 어디서 감지했는지
+  sourceFile: string;       // 감지 근거 파일
+}
+
+export type TechCategory = 'language' | 'framework' | 'library' | 'database' | 'tool' | 'runtime' | 'other';
+export type TechSource = 'packageJson' | 'lockFile' | 'configFile' | 'fileExtension' | 'dockerfile' | 'inferred';
+
+export interface TechStackResult {
+  stacks: TechStack[];
+  analyzedAt: string;
+}
+
+/** ERD 관련 */
+export interface ErdResult {
+  tables: ErdTable[];
+  relations: ErdRelation[];
+  source: ErdSource;
+  sourceFile: string | null;
+}
+
+export interface ErdTable {
+  name: string;
+  columns: ErdColumn[];
+}
+
+export interface ErdColumn {
+  name: string;
+  type: string;
+  isPrimaryKey: boolean;
+  isForeignKey: boolean;
+  isNullable: boolean;
+  defaultValue?: string;
+  relationTo?: string;     // 관계 대상 테이블
+}
+
+export interface ErdRelation {
+  from: string;            // 테이블명
+  to: string;              // 테이블명
+  fromColumn: string;
+  toColumn: string;
+  type: 'one-to-one' | 'one-to-many' | 'many-to-many';
+}
+
+export type ErdSource = 'prisma' | 'typeorm' | 'sql' | 'manual' | 'none';
+
+/** Dashboard 경고/안내 */
+export interface DashboardWarning {
+  type: 'info' | 'warning' | 'error';
+  code: string;
+  message: string;
+}
+
+/** 파일 변경 이벤트 (WebSocket용) */
+export interface FileChangeEvent {
+  projectId: string;
+  changeType: 'plan' | 'git' | 'config' | 'schema';
+  timestamp: string;
+}
