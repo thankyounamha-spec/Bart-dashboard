@@ -202,7 +202,7 @@ export default function ProjectDashboardPage() {
       </div>
 
       {/* Top bar */}
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm flex-shrink-0 print:bg-white print:border-gray-200">
+      <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm flex-shrink-0 relative z-[200] print:bg-white print:border-gray-200">
         <button
           onClick={() => navigate('/')}
           className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-200 transition-colors print:hidden"
