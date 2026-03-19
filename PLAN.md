@@ -44,8 +44,8 @@ Claude Code CLI 기반 개발 프로젝트의 진행 상황을 시각화하는 V
 - [x] SQL schema 파싱 (한글 테이블명/MySQL 대응)
 - [x] 테이블/엔티티 시각화
 - [x] 하위 디렉토리 DDL 자동 탐색
-- [ ] TypeORM entity 파싱
-- [ ] GitHub repo 동기화
+- [x] TypeORM entity 파싱
+- [x] GitHub repo 동기화
 
 ### 6. Dashboard UI
 - [x] 프로젝트 헤더
@@ -73,5 +73,5 @@ Claude Code CLI 기반 개발 프로젝트의 진행 상황을 시각화하는 V
 - [x] 경로 보안 검증
 - [x] EADDRINUSE 포트 충돌 처리
 - [x] Graceful degradation (Plan/Git/ERD 없어도 동작)
-- [ ] Claude 로그 adapter 연동
-- [ ] 팀 단위 모니터링
+- [x] Claude 로그 adapter 연동
+- [x] 팀 단위 모니터링

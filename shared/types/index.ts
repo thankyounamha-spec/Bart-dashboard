@@ -194,3 +194,85 @@ export interface FileDiff {
   diff: string;
   truncated: boolean;
 }
+
+/** GitHub 연동 정보 */
+export interface GitHubInfo {
+  owner: string;
+  repo: string;
+  url: string;
+  description?: string;
+  defaultBranch?: string;
+  stars: number;
+  forks: number;
+  openIssues: number;
+  openPRs: number;
+  pullRequests: GitHubPR[];
+  issues: GitHubIssue[];
+}
+
+export interface GitHubPR {
+  number: number;
+  title: string;
+  state: string;
+  author: string;
+  updatedAt: string;
+  url: string;
+}
+
+export interface GitHubIssue {
+  number: number;
+  title: string;
+  state: string;
+  labels: string[];
+  updatedAt: string;
+  url: string;
+}
+
+/** Claude 로그 대화 요약 */
+export interface ClaudeConversation {
+  id: string;
+  startedAt: string;
+  messageCount: number;
+  toolsUsed: string[];
+  summary: string;
+  filePath: string;
+}
+
+export interface ClaudeLogResult {
+  conversations: ClaudeConversation[];
+  totalConversations: number;
+  projectPath: string | null;
+}
+
+/** 팀 모니터링 요약 */
+export interface TeamOverview {
+  totalProjects: number;
+  activeProjects: number;
+  totalCommitsToday: number;
+  totalCommitsWeek: number;
+  authorStats: AuthorStat[];
+  inactiveProjects: InactiveProject[];
+}
+
+export interface AuthorStat {
+  author: string;
+  commitsToday: number;
+  commitsWeek: number;
+  lastCommitDate: string;
+  projects: string[];
+}
+
+export interface InactiveProject {
+  projectId: string;
+  projectName: string;
+  lastCommitDate: string | null;
+  daysSinceLastCommit: number;
+}
+
+/** 대시보드 섹션 상태 */
+export interface SectionHealth {
+  section: string;
+  status: 'ok' | 'loading' | 'error' | 'empty';
+  message?: string;
+  lastUpdated?: string;
+}

@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { ErdResult } from '../types/index.js';
-import { parsePrismaSchema, parseSqlSchema } from '../parsers/schemaParser.js';
+import { parsePrismaSchema, parseSqlSchema, parseTypeOrmEntities } from '../parsers/schemaParser.js';
 import { logger } from '../utils/logger.js';
 
 /** 스키마 파일 탐색 후보 목록 (우선순위 순) */
@@ -85,6 +85,62 @@ export async function getErd(projectPath: string): Promise<ErdResult | null> {
     return result;
   }
 
+  // TypeORM entity 파일 탐색 (*.entity.ts, *.entity.js)
+  const entityFiles: { path: string; content: string }[] = [];
+  const entitySearchDirs = [
+    path.join(normalizedPath, 'src'),
+    path.join(normalizedPath, 'src', 'entities'),
+    path.join(normalizedPath, 'src', 'entity'),
+    path.join(normalizedPath, 'entities'),
+    path.join(normalizedPath, 'entity'),
+    normalizedPath,
+  ];
+
+  for (const dir of entitySearchDirs) {
+    try {
+      await scanForEntityFiles(dir, normalizedPath, entityFiles);
+    } catch { /* 디렉토리 없음 무시 */ }
+  }
+
+  if (entityFiles.length > 0) {
+    logger.info(`TypeORM entity 파일 ${entityFiles.length}개 발견`);
+    const result = parseTypeOrmEntities(entityFiles);
+    if (result.tables.length > 0) {
+      result.sourceFile = entityFiles[0].path;
+      return result;
+    }
+  }
+
   logger.debug(`스키마 파일 없음: ${projectPath}`);
   return null;
+}
+
+/** 디렉토리에서 *.entity.ts/js 파일을 재귀적으로 탐색 (최대 3depth) */
+async function scanForEntityFiles(
+  dir: string,
+  basePath: string,
+  result: { path: string; content: string }[],
+  depth = 0,
+): Promise<void> {
+  if (depth > 3) return;
+  const seenPaths = new Set(result.map(f => f.path));
+
+  try {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isFile() && /\.entity\.(ts|js)$/.test(entry.name)) {
+        const fullPath = path.join(dir, entry.name);
+        const relPath = path.relative(basePath, fullPath);
+        if (seenPaths.has(relPath)) continue;
+        try {
+          const content = await fs.readFile(fullPath, 'utf-8');
+          if (content.includes('@Entity')) {
+            result.push({ path: relPath, content });
+          }
+        } catch { /* 읽기 실패 무시 */ }
+      } else if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+        await scanForEntityFiles(path.join(dir, entry.name), basePath, result, depth + 1);
+      }
+    }
+  } catch { /* 디렉토리 읽기 실패 무시 */ }
 }

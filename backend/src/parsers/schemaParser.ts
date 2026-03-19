@@ -2,6 +2,152 @@ import type { ErdTable, ErdColumn, ErdRelation, ErdResult } from '../types/index
 import { logger } from '../utils/logger.js';
 
 /**
+ * TypeORM Entity 파일 파싱
+ * @Entity, @Column, @PrimaryGeneratedColumn, @ManyToOne 등 데코레이터 기반
+ */
+export function parseTypeOrmEntities(files: { path: string; content: string }[]): ErdResult {
+  logger.debug('TypeORM 엔티티 파싱 시작');
+
+  const tables: ErdTable[] = [];
+  const relations: ErdRelation[] = [];
+
+  for (const file of files) {
+    const { content } = file;
+
+    // @Entity() 데코레이터가 있는 클래스 추출
+    const entityRegex = /@Entity\s*\([^)]*\)[\s\S]*?(?:export\s+)?class\s+(\w+)[\s\S]*?\{([\s\S]*?)(?=\n(?:export\s+)?class\s|\n@Entity|\Z)/g;
+    // 좀 더 안정적으로: 클래스 블록 전체를 추출
+    const classRegex = /@Entity\s*\([^)]*\)\s*(?:export\s+)?class\s+(\w+)(?:\s+extends\s+\w+)?\s*\{/g;
+    let classMatch: RegExpExecArray | null;
+
+    while ((classMatch = classRegex.exec(content)) !== null) {
+      const className = classMatch[1];
+      const startIdx = classMatch.index + classMatch[0].length;
+
+      // 중괄호 매칭으로 클래스 본문 추출
+      let depth = 1;
+      let endIdx = startIdx;
+      for (let i = startIdx; i < content.length && depth > 0; i++) {
+        if (content[i] === '{') depth++;
+        if (content[i] === '}') depth--;
+        endIdx = i;
+      }
+      const body = content.substring(startIdx, endIdx);
+      const columns: ErdColumn[] = [];
+
+      // @PrimaryGeneratedColumn / @PrimaryColumn
+      const pkRegex = /@Primary(?:Generated)?Column\s*\([^)]*\)\s*(\w+)\s*[!?]?\s*:\s*(\w+)/g;
+      let pkMatch: RegExpExecArray | null;
+      while ((pkMatch = pkRegex.exec(body)) !== null) {
+        columns.push({
+          name: pkMatch[1],
+          type: pkMatch[2],
+          isPrimaryKey: true,
+          isForeignKey: false,
+          isNullable: false,
+        });
+      }
+
+      // @Column
+      const colRegex = /@Column\s*\(([^)]*)\)\s*(\w+)\s*[!?]?\s*:\s*(\w+)/g;
+      let colMatch: RegExpExecArray | null;
+      while ((colMatch = colRegex.exec(body)) !== null) {
+        const opts = colMatch[1];
+        const colName = colMatch[2];
+        const colType = colMatch[3];
+        const isNullable = opts.includes('nullable') && opts.includes('true');
+        const defaultMatch = opts.match(/default\s*:\s*(['"]?[^'",}]+['"]?)/);
+
+        columns.push({
+          name: colName,
+          type: colType,
+          isPrimaryKey: false,
+          isForeignKey: false,
+          isNullable,
+          defaultValue: defaultMatch ? defaultMatch[1].trim() : undefined,
+        });
+      }
+
+      // @CreateDateColumn, @UpdateDateColumn, @DeleteDateColumn
+      const dateColRegex = /@(?:Create|Update|Delete)DateColumn\s*\([^)]*\)\s*(\w+)\s*[!?]?\s*:\s*(\w+)/g;
+      let dateMatch: RegExpExecArray | null;
+      while ((dateMatch = dateColRegex.exec(body)) !== null) {
+        columns.push({
+          name: dateMatch[1],
+          type: dateMatch[2],
+          isPrimaryKey: false,
+          isForeignKey: false,
+          isNullable: true,
+        });
+      }
+
+      // 관계 데코레이터: @ManyToOne, @OneToMany, @OneToOne, @ManyToMany
+      const relRegex = /@(ManyToOne|OneToMany|OneToOne|ManyToMany)\s*\(\s*\(\)\s*=>\s*(\w+)/g;
+      let relMatch: RegExpExecArray | null;
+      while ((relMatch = relRegex.exec(body)) !== null) {
+        const relType = relMatch[1];
+        const targetEntity = relMatch[2];
+
+        let type: 'one-to-one' | 'one-to-many' | 'many-to-many' = 'one-to-many';
+        if (relType === 'OneToOne') type = 'one-to-one';
+        else if (relType === 'ManyToMany') type = 'many-to-many';
+        else if (relType === 'OneToMany') type = 'one-to-many';
+
+        // ManyToOne은 FK를 가진 쪽 → one-to-many (역방향)
+        if (relType === 'ManyToOne') {
+          relations.push({
+            from: className,
+            to: targetEntity,
+            fromColumn: targetEntity.toLowerCase() + 'Id',
+            toColumn: 'id',
+            type: 'one-to-many',
+          });
+        } else if (relType !== 'OneToMany') {
+          // OneToMany는 역방향이므로 중복 방지를 위해 스킵
+          relations.push({
+            from: className,
+            to: targetEntity,
+            fromColumn: 'id',
+            toColumn: 'id',
+            type,
+          });
+        }
+      }
+
+      // @JoinColumn에서 FK 컬럼 추출
+      const joinRegex = /@JoinColumn\s*\(\s*\{[^}]*name\s*:\s*['"](\w+)['"]/g;
+      let joinMatch: RegExpExecArray | null;
+      while ((joinMatch = joinRegex.exec(body)) !== null) {
+        const fkName = joinMatch[1];
+        if (!columns.find(c => c.name === fkName)) {
+          columns.push({
+            name: fkName,
+            type: 'number',
+            isPrimaryKey: false,
+            isForeignKey: true,
+            isNullable: true,
+          });
+        } else {
+          const col = columns.find(c => c.name === fkName);
+          if (col) col.isForeignKey = true;
+        }
+      }
+
+      tables.push({ name: className, columns });
+    }
+  }
+
+  logger.debug(`TypeORM 파싱 완료: ${tables.length}개 테이블, ${relations.length}개 관계`);
+
+  return {
+    tables,
+    relations,
+    source: 'typeorm',
+    sourceFile: files[0]?.path ?? null,
+  };
+}
+
+/**
  * Prisma 스키마 파일 파싱
  * model 블록에서 테이블, 컬럼, 관계를 추출
  */

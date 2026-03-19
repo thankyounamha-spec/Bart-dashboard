@@ -1,10 +1,14 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import type { FileChangeEvent } from '@/types';
 
 interface UseWebSocketOptions {
   projectId: string | null;
   onFileChange?: (event: FileChangeEvent) => void;
   enabled?: boolean;
+}
+
+interface UseWebSocketResult {
+  connected: boolean;
 }
 
 /**
@@ -15,9 +19,10 @@ export function useWebSocket({
   projectId,
   onFileChange,
   enabled = true,
-}: UseWebSocketOptions) {
+}: UseWebSocketOptions): UseWebSocketResult {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const [connected, setConnected] = useState(false);
 
   const connect = useCallback(() => {
     if (!enabled || !projectId) return;
@@ -28,6 +33,7 @@ export function useWebSocket({
       const ws = new WebSocket(`${protocol}//${host}:6173/ws`);
 
       ws.onopen = () => {
+        setConnected(true);
         // Subscribe to project events
         ws.send(JSON.stringify({ type: 'subscribe', projectId }));
       };
@@ -45,6 +51,7 @@ export function useWebSocket({
 
       ws.onclose = () => {
         wsRef.current = null;
+        setConnected(false);
         // Reconnect after 5 seconds
         reconnectTimerRef.current = setTimeout(connect, 5000);
       };
@@ -56,6 +63,7 @@ export function useWebSocket({
       wsRef.current = ws;
     } catch {
       // WebSocket not available, will retry
+      setConnected(false);
       reconnectTimerRef.current = setTimeout(connect, 5000);
     }
   }, [projectId, onFileChange, enabled]);
@@ -71,4 +79,6 @@ export function useWebSocket({
       }
     };
   }, [connect]);
+
+  return { connected };
 }

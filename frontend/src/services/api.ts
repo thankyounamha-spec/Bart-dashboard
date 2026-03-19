@@ -11,6 +11,9 @@ import type {
   CommitStats,
   FileTreeNode,
   FileDiff,
+  GitHubInfo,
+  ClaudeLogResult,
+  TeamOverview,
 } from '@/types';
 
 const api = axios.create({
@@ -38,7 +41,7 @@ api.interceptors.response.use(
 
     // "데이터 없음" 류의 예상된 404는 토스트에서 제외
     // (Plan.md 없음, 스키마 없음, Git 미초기화 등은 UI에서 별도 처리)
-    const SILENT_CODES = ['PLAN_NOT_FOUND', 'SCHEMA_NOT_FOUND', 'GIT_NOT_INITIALIZED', 'COMMIT_NOT_FOUND'];
+    const SILENT_CODES = ['PLAN_NOT_FOUND', 'SCHEMA_NOT_FOUND', 'GIT_NOT_INITIALIZED', 'COMMIT_NOT_FOUND', 'GITHUB_NOT_AVAILABLE', 'CLAUDE_LOGS_NOT_FOUND'];
     if (!SILENT_CODES.includes(code)) {
       window.dispatchEvent(new CustomEvent('bart:api-error', {
         detail: { message: msg, endpoint, fullDetail: JSON.stringify(error.response?.data || {}) },
@@ -151,4 +154,19 @@ export async function fetchFileDiff(
     `/projects/${projectId}/timeline/${hash}/diff/${encodedPath}`
   );
   return res.data as FileDiff;
+}
+
+export async function fetchGitHubInfo(projectId: string): Promise<GitHubInfo> {
+  const res = await api.get(`/projects/${projectId}/github`);
+  return res.data as GitHubInfo;
+}
+
+export async function fetchClaudeLogs(projectId: string): Promise<ClaudeLogResult> {
+  const res = await api.get(`/projects/${projectId}/claude-logs`);
+  return res.data as ClaudeLogResult;
+}
+
+export async function fetchTeamOverview(): Promise<TeamOverview> {
+  const res = await api.get('/team/overview');
+  return res.data as TeamOverview;
 }

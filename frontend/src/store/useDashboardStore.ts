@@ -140,6 +140,10 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
     try {
       const timeline = await fetchTimeline(projectId);
       set({ timeline, timelineState: 'success' });
+      // 최상단 커밋 자동 선택
+      if (timeline.length > 0 && !get().selectedCommit) {
+        get().selectCommit(projectId, timeline[0].hash);
+      }
     } catch (err) {
       set({
         timelineState: 'error',

@@ -8,6 +8,9 @@ import * as erdController from '../controllers/erdController.js';
 import * as syncController from '../controllers/syncController.js';
 import * as statsController from '../controllers/statsController.js';
 import * as fileTreeController from '../controllers/fileTreeController.js';
+import * as githubController from '../controllers/githubController.js';
+import * as claudeLogController from '../controllers/claudeLogController.js';
+import * as teamController from '../controllers/teamController.js';
 
 const router = Router();
 
@@ -43,5 +46,14 @@ router.get('/projects/:projectId/erd', asyncHandler(erdController.getErd));
 
 // 동기화
 router.post('/projects/:projectId/sync', asyncHandler(syncController.syncProject));
+
+// GitHub 연동
+router.get('/projects/:projectId/github', asyncHandler(githubController.getGitHubInfo));
+
+// Claude 로그
+router.get('/projects/:projectId/claude-logs', asyncHandler(claudeLogController.getClaudeLogs));
+
+// 팀 모니터링
+router.get('/team/overview', asyncHandler(teamController.getTeamOverview));
 
 export default router;

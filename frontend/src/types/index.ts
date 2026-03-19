@@ -29,6 +29,15 @@ export type {
   CommitStats,
   FileTreeNode,
   FileDiff,
+  GitHubInfo,
+  GitHubPR,
+  GitHubIssue,
+  ClaudeConversation,
+  ClaudeLogResult,
+  TeamOverview,
+  AuthorStat,
+  InactiveProject,
+  SectionHealth,
 } from '@shared/types/index';
 
 // Frontend-specific types

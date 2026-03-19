@@ -18,6 +18,9 @@ import ErdViewer from '@/components/erd/ErdViewer';
 import ErdTableDetail from '@/components/erd/ErdTableDetail';
 import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 import ErrorBanner from '@/components/common/ErrorBanner';
+import StatusBar from '@/components/dashboard/StatusBar';
+import GitHubCard from '@/components/dashboard/GitHubCard';
+import ClaudeLogCard from '@/components/dashboard/ClaudeLogCard';
 import type { CenterView, FileChangeEvent, PlanSummary } from '@/types';
 import type { ErdTable, GitCommit } from '@/types';
 
@@ -101,7 +104,7 @@ export default function ProjectDashboardPage() {
   );
 
   // WebSocket for real-time updates
-  useWebSocket({
+  const { connected: wsConnected } = useWebSocket({
     projectId: projectId ?? null,
     onFileChange: useCallback(
       (event: FileChangeEvent) => {
@@ -124,6 +127,14 @@ export default function ProjectDashboardPage() {
       [projectId, loadPlan, loadTimeline, loadStack, loadErd]
     ),
   });
+
+  // 마지막 동기화 시간 추적
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+  useEffect(() => {
+    if (summaryState === 'success') {
+      setLastSyncTime(new Date().toISOString());
+    }
+  }, [summaryState]);
 
   const handleCommitSelect = (commit: GitCommit) => {
     if (projectId) {
@@ -368,6 +379,9 @@ export default function ProjectDashboardPage() {
 
           <FileTreeView projectId={projectId} />
 
+          <GitHubCard projectId={projectId} />
+          <ClaudeLogCard projectId={projectId} />
+
           {/* Mini ERD summary in sidebar */}
           {erd && erd.tables.length > 0 && (
             <div className="card p-4 space-y-2">
@@ -442,6 +456,18 @@ export default function ProjectDashboardPage() {
           )}
         </aside>
       </div>
+
+      {/* Status bar */}
+      <StatusBar
+        sections={[
+          { name: 'Plan', state: planState, error: planError },
+          { name: 'Git', state: timelineState, error: timelineError },
+          { name: 'Stack', state: stackState, error: stackError },
+          { name: 'ERD', state: erdState, error: erdError },
+        ]}
+        wsConnected={wsConnected}
+        lastSyncTime={lastSyncTime}
+      />
 
       {/* 인쇄 전용 푸터 — 화면에서는 숨김 */}
       <div className="hidden print-footer" style={{ display: 'none' }}>
