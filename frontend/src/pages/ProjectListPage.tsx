@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProjectStore } from '@/store/useProjectStore';
 import { formatDate, formatPath, formatPercent } from '@/utils/format';
@@ -105,10 +105,15 @@ function ProjectCard({ summary, onClick }: { summary: ProjectSummary; onClick: (
 }
 
 export default function ProjectListPage() {
-  const { projects, loading, error, loadProjects } = useProjectStore();
+  const { projects, loading, error, loadProjects, reorderProjects } = useProjectStore();
   const [showAddModal, setShowAddModal] = useState(false);
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
+
+  // 드래그 상태 관리
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
 
   useEffect(() => {
     loadProjects();
@@ -123,6 +128,30 @@ export default function ProjectListPage() {
         p.project.path.toLowerCase().includes(q)
     );
   }, [projects, search]);
+
+  // 검색 중이 아닐 때만 드래그 허용
+  const isDraggable = !search.trim();
+
+  const handleDragStart = (idx: number) => {
+    dragItem.current = idx;
+    setDragIdx(idx);
+  };
+
+  const handleDragEnter = (idx: number) => {
+    dragOverItem.current = idx;
+  };
+
+  const handleDragEnd = () => {
+    if (dragItem.current !== null && dragOverItem.current !== null && dragItem.current !== dragOverItem.current) {
+      const ids = filtered.map((s) => s.project.id);
+      const [removed] = ids.splice(dragItem.current, 1);
+      ids.splice(dragOverItem.current, 0, removed);
+      reorderProjects(ids);
+    }
+    dragItem.current = null;
+    dragOverItem.current = null;
+    setDragIdx(null);
+  };
 
   return (
     <div className="min-h-screen">
@@ -201,12 +230,25 @@ export default function ProjectListPage() {
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((summary) => (
-              <ProjectCard
+            {filtered.map((summary, idx) => (
+              <div
                 key={summary.project.id}
-                summary={summary}
-                onClick={() => navigate(`/project/${summary.project.id}`)}
-              />
+                draggable={isDraggable}
+                onDragStart={() => handleDragStart(idx)}
+                onDragEnter={() => handleDragEnter(idx)}
+                onDragEnd={handleDragEnd}
+                onDragOver={(e) => e.preventDefault()}
+                className={`transition-all duration-150 ${
+                  isDraggable ? 'cursor-grab active:cursor-grabbing' : ''
+                } ${dragIdx === idx ? 'opacity-40 scale-95' : ''} ${
+                  dragIdx !== null && dragIdx !== idx ? 'hover:border-indigo-500 hover:border-2 rounded-xl' : ''
+                }`}
+              >
+                <ProjectCard
+                  summary={summary}
+                  onClick={() => navigate(`/project/${summary.project.id}`)}
+                />
+              </div>
             ))}
           </div>
         )}

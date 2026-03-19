@@ -135,6 +135,31 @@ export async function getProjectSummary(req: Request, res: Response): Promise<vo
   res.json(response);
 }
 
+/** 프로젝트 순서 변경 */
+export async function reorderProjects(req: Request, res: Response): Promise<void> {
+  const { orderedIds } = req.body;
+
+  if (!Array.isArray(orderedIds)) {
+    const response: ApiResponse<null> = {
+      success: false,
+      data: null,
+      error: { code: ERROR_CODES.INVALID_PATH, message: '순서 데이터가 유효하지 않습니다.' },
+    };
+    res.status(400).json(response);
+    return;
+  }
+
+  await projectService.reorderProjects(orderedIds);
+
+  const response: ApiResponse<{ reordered: boolean }> = {
+    success: true,
+    data: { reordered: true },
+    error: null,
+  };
+
+  res.json(response);
+}
+
 /** 프로젝트 삭제 */
 export async function deleteProject(req: Request, res: Response): Promise<void> {
   const { projectId } = req.params;

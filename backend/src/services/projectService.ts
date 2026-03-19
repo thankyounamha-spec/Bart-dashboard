@@ -107,6 +107,19 @@ export async function deleteProject(id: string): Promise<boolean> {
   return true;
 }
 
+/** 프로젝트 순서 변경 */
+export async function reorderProjects(orderedIds: string[]): Promise<void> {
+  const store = await readStore();
+  const reordered = orderedIds
+    .map((id) => store.projects.find((p) => p.id === id))
+    .filter(Boolean) as Project[];
+  // orderedIds에 없는 프로젝트는 뒤에 붙임
+  const remaining = store.projects.filter((p) => !orderedIds.includes(p.id));
+  store.projects = [...reordered, ...remaining];
+  await writeStore(store);
+  logger.info(`프로젝트 순서 변경: ${orderedIds.join(', ')}`);
+}
+
 /** lastSyncedAt 업데이트 */
 export async function updateLastSynced(id: string): Promise<void> {
   const store = await readStore();

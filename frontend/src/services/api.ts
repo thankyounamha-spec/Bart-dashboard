@@ -86,6 +86,10 @@ export async function fetchErd(projectId: string): Promise<ErdResult> {
   return res.data as ErdResult;
 }
 
+export async function reorderProjectsApi(orderedIds: string[]): Promise<void> {
+  await api.put('/projects/reorder', { orderedIds });
+}
+
 export async function generatePlan(projectId: string): Promise<PlanSummary> {
   const res = await api.post(`/projects/${projectId}/plan/generate`);
   return res.data as PlanSummary;

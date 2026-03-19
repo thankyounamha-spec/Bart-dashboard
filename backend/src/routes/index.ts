@@ -12,6 +12,7 @@ const router = Router();
 // 프로젝트 관리
 router.get('/projects', asyncHandler(projectController.listProjects));
 router.post('/projects', asyncHandler(projectController.createProject));
+router.put('/projects/reorder', asyncHandler(projectController.reorderProjects));
 router.get('/projects/:projectId/summary', asyncHandler(projectController.getProjectSummary));
 router.delete('/projects/:projectId', asyncHandler(projectController.deleteProject));
 

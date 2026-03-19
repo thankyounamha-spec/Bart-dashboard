@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { ProjectSummary } from '@/types';
-import { fetchProjects, createProject } from '@/services/api';
+import { fetchProjects, createProject, reorderProjectsApi } from '@/services/api';
 
 interface ProjectStore {
   projects: ProjectSummary[];
@@ -11,6 +11,7 @@ interface ProjectStore {
   loadProjects: () => Promise<void>;
   addProject: (path: string, name?: string) => Promise<void>;
   selectProject: (project: ProjectSummary | null) => void;
+  reorderProjects: (orderedIds: string[]) => void;
 }
 
 export const useProjectStore = create<ProjectStore>((set, get) => ({
@@ -36,7 +37,6 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     set({ loading: true, error: null });
     try {
       await createProject(path, name);
-      // Reload full list after adding
       await get().loadProjects();
     } catch (err) {
       set({
@@ -49,5 +49,20 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   selectProject: (project) => {
     set({ selectedProject: project });
+  },
+
+  reorderProjects: (orderedIds: string[]) => {
+    // 즉시 UI 반영 (낙관적 업데이트)
+    const current = get().projects;
+    const reordered = orderedIds
+      .map((id) => current.find((p) => p.project.id === id))
+      .filter(Boolean) as ProjectSummary[];
+    set({ projects: reordered });
+
+    // 백엔드에 순서 저장 (실패해도 UI는 유지)
+    reorderProjectsApi(orderedIds).catch(() => {
+      // 실패 시 원래 순서로 복원
+      get().loadProjects();
+    });
   },
 }));
