@@ -224,33 +224,48 @@ export default function ProjectDashboardPage() {
             </svg>
           </button>
           {showProjectDropdown && allProjects.length > 0 && (
-            <div className="absolute top-full left-0 mt-1 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 py-1 max-h-80 overflow-y-auto scrollbar-thin">
-              {allProjects.map((p) => (
-                <button
-                  key={p.project.id}
-                  onClick={() => {
-                    setShowProjectDropdown(false);
-                    if (p.project.id !== projectId) {
+            <div className="absolute top-full left-0 mt-1 w-72 bg-[#1e2235] border border-gray-600 rounded-lg shadow-2xl z-50 py-1.5 max-h-80 overflow-y-auto scrollbar-thin">
+              <div className="px-3 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">프로젝트 전환</div>
+              {allProjects.map((p) => {
+                const isCurrent = p.project.id === projectId;
+                return (
+                  <button
+                    key={p.project.id}
+                    onClick={() => {
+                      setShowProjectDropdown(false);
                       navigate(`/project/${p.project.id}`);
-                    }
-                  }}
-                  className={`w-full text-left px-3 py-2.5 transition-colors ${
-                    p.project.id === projectId
-                      ? 'bg-indigo-600/20 text-indigo-300'
-                      : 'text-gray-300 hover:bg-gray-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium truncate">{p.project.name}</span>
-                    {p.project.id === projectId && (
-                      <svg className="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <span className="text-xs text-gray-500 font-mono truncate block">{p.project.path}</span>
-                </button>
-              ))}
+                    }}
+                    className={`w-full text-left px-3 py-2.5 transition-colors border-l-2 ${
+                      isCurrent
+                        ? 'bg-indigo-500/15 border-l-indigo-400 text-white'
+                        : 'border-l-transparent text-gray-200 hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-sm font-medium truncate ${isCurrent ? 'text-white' : ''}`}>
+                        {p.project.name}
+                      </span>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {p.plan && (
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                            p.plan.progressPercent >= 100 ? 'bg-green-500/20 text-green-300' :
+                            p.plan.progressPercent >= 50 ? 'bg-indigo-500/20 text-indigo-300' :
+                            'bg-amber-500/20 text-amber-300'
+                          }`}>
+                            {p.plan.progressPercent}%
+                          </span>
+                        )}
+                        {isCurrent && (
+                          <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-[11px] text-gray-500 font-mono truncate block mt-0.5">{p.project.path}</span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
