@@ -69,7 +69,7 @@ export async function getErd(projectPath: string): Promise<ErdResult | null> {
             const content = await fs.readFile(sqlPath, 'utf-8');
             if (/CREATE\s+TABLE/i.test(content)) {
               const relPath = path.relative(normalizedPath, sqlPath);
-              logger.info(`SQL DDL 파일 발견: ${relPath}`);
+              logger.debug(`SQL DDL 파일 발견: ${relPath}`);
               combinedSql += '\n' + content;
               if (!foundSqlFile) foundSqlFile = relPath;
             }

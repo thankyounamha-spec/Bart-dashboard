@@ -121,7 +121,7 @@ const EXTENSION_MAP: Record<string, { name: string; category: TechCategory }> = 
  * package.json, 설정 파일, 락 파일, 확장자 등을 종합적으로 분석
  */
 export async function detectTechStack(projectPath: string): Promise<TechStackResult> {
-  logger.info(`기술 스택 감지 시작: ${projectPath}`);
+  logger.debug(`기술 스택 감지 시작: ${projectPath}`);
 
   const stacks: TechStack[] = [];
   // 중복 방지를 위한 이름 추적
